@@ -62,8 +62,8 @@ func GetStrategy(regretSum *[]int) []float64 {
 	}
 
 	if normalizedSum > 0 {
-		for _, el := range regretFloat {
-			el /= float64(normalizedSum)
+		for index, _ := range regretFloat {
+			regretFloat[index] /= float64(normalizedSum)
 		}
 	} else {
 		for index, _ := range regretFloat {
@@ -75,13 +75,10 @@ func GetStrategy(regretSum *[]int) []float64 {
 
 }
 
-var indexes = []int{}
-
 func GetAction(strategy []float64) int {
 	// Get random number
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	n := float64(r1.Intn(100))
+	rand.Seed(time.Now().UnixNano())
+	n := float64(rand.Intn(100))
 
 	/* Change that */
 	Hstrat := make([]int, len(strategy))
@@ -100,7 +97,6 @@ func GetAction(strategy []float64) int {
 
 		cumul += number
 		if n <= float64(cumul) {
-			indexes = append(indexes, index)
 			return index
 		}
 
@@ -112,7 +108,6 @@ func GetAction(strategy []float64) int {
 	if index > maxLen {
 		index = maxLen
 	}
-	indexes = append(indexes, index)
 	return index
 }
 
@@ -125,7 +120,7 @@ func (t *Trainer) Train(iterations int) {
 	for i := 0; i < iterations; i++ {
 		strategy := GetStrategy(&t.RegretSum)
 		oppStrategy := GetStrategy(&t.OppRegretSum)
-		for i := 0; i > len(strategy); i++ {
+		for i := 0; i < len(strategy); i++ {
 			t.StrategySum[i] += strategy[i]
 			t.OppStrategySum[i] += oppStrategy[i]
 		}
@@ -140,8 +135,15 @@ func (t *Trainer) Train(iterations int) {
 			// Regrets adding
 			heroRegret := t.GetReward(i, opponentAction) - heroReward
 			vilainRegret := t.GetReward(i, heroAction) - oppReward
-			t.RegretSum[i] += heroRegret
-			t.OppRegretSum[i] += vilainRegret
+			// CFR + here
+			if heroRegret > 0 {
+				t.RegretSum[i] += heroRegret
+
+			}
+			if vilainRegret > 0 {
+				t.OppRegretSum[i] += vilainRegret
+
+			}
 		}
 	}
 }
@@ -149,6 +151,9 @@ func (t *Trainer) Train(iterations int) {
 func (t *Trainer) PrintAverageStrategy(strategySum []float64) {
 	avgStrat := []float64{0.0, 0.0, 0.0}
 	var normalizingSum float64 = 0.0
+	for _, el := range strategySum {
+		normalizingSum += el
+	}
 	for i := 0; i < len(strategySum); i++ {
 		if normalizingSum > 0 {
 			avgStrat[i] = strategySum[i] / normalizingSum
@@ -163,10 +168,10 @@ func (t *Trainer) PrintAverageStrategy(strategySum []float64) {
 }
 
 func main() {
+	start := time.Now()
 	trainer := NewTrainer()
-	trainer.Train(100)
-	for _, el := range indexes {
-		fmt.Printf("%d", el)
-	}
+	trainer.Train(100000)
+	elapsed := time.Since(start)
 	trainer.PrintAverageStrategy(trainer.StrategySum)
+	fmt.Printf("Took : %s", elapsed)
 }

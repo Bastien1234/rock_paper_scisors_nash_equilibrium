@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from numpy.random import choice
 
 
@@ -68,13 +69,16 @@ class RPSTrainer:
 
 
 def main():
+    st = time.time()
     trainer = RPSTrainer()
-    trainer.train(10000)
+    trainer.train(100000)
     target_policy = trainer.get_average_strategy(trainer.strategy_sum)
     opp_target_policy = trainer.get_average_strategy(trainer.opponent_strategy_sum)
     print('player 1 policy: %s' % target_policy)
     print('player 2 policy: %s' % opp_target_policy)
-
+    end = time.time()
+    elapsed = end - st
+    print('Execution time:', elapsed, 'seconds')
 
 if __name__ == "__main__":
     main()
